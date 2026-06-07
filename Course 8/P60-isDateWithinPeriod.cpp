@@ -92,17 +92,41 @@ bool IsDate1BeforeDate2(sDate Date1, sDate Date2)
         true : (Date1.Month == Date2.Month ? Date1.Day < Date2.Day : false)) : false);
 }
 
-
-short periodLengthDays(stPeriod Period , bool IncludeEndDate = false)
+bool isDate1EqualDate2(sDate Date1 , sDate Date2)
 {
-    int Days = 0;
-    while(IsDate1BeforeDate2(Period.StartDate , Period.EndDate))
-    {   
-        Days++;
-        Period.StartDate = increaseDateByOneDay(Period.StartDate);
-    }
+    return (Date1.Year == Date2.Year) ? ((Date1.Month == 
+        Date2.Month) ? ((Date1.Day == Date2.Day) ? true : false) : false) : false;
+}
+
+bool isDate1AfterDate2(sDate Date1 , sDate Date2)
+{
+    return (!IsDate1BeforeDate2(Date1 , Date2) && !isDate1EqualDate2(Date1 , Date2));
+}
+
+enum enDateCompare{ Before = -1 , Equal = 0 , After = 1 };
+
+enDateCompare CompareDates(sDate Date1 , sDate Date2)
+{
+    if(IsDate1BeforeDate2(Date1 , Date2)) return enDateCompare::Before;
+    if(isDate1EqualDate2(Date1 , Date2)) return enDateCompare::Equal;
     
-    return IncludeEndDate ? ++Days : Days;
+    return enDateCompare::After;
+}
+
+
+bool isDateWithinInPeriod(stPeriod period , sDate Date)
+{
+        // using reverse logic // Reverse Negation
+    return !(CompareDates(Date , period.StartDate) == enDateCompare ::Before
+
+        || 
+
+            CompareDates(Date , period.EndDate) == enDateCompare :: After);
+
+// المنطق المباشر باستخدام && (بدون نفي)
+/*/return (CompareDates(Date, period.StartDate) != enDateCompare::Before 
+     && CompareDates(Date, period.EndDate) != enDateCompare::After);/*/
+
 }
 
 
@@ -159,9 +183,13 @@ int main()
 {
     cout << "\nEnter Period 1:";
     stPeriod Period1 = readPeriod();
+    cout << "\n\nEnter Date to Cheack:\n";
+    sDate Date = readFullDate();
 
-    cout << "Period Length is: " << periodLengthDays(Period1);
-    cout << "\nPeriod Length (Including End Date) is: " << periodLengthDays(Period1 ,true);
+    if(isDateWithinInPeriod(Period1 , Date))
+        cout << "\n\nYes, Date is within period.";
+    else 
+        cout << "\n\nNo, Date Not within period.";
 
 
     cout << "\nPress Enter to exit...";

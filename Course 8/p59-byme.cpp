@@ -160,7 +160,7 @@ int main()
     cout << "\nEnter Period 1:";
     stPeriod Period1 = readPeriod();
 
-    cout << "Period Length is: " << periodLengthDays(Period1);
+    cout << "\n\nPeriod Length is: " << periodLengthDays(Period1);
     cout << "\nPeriod Length (Including End Date) is: " << periodLengthDays(Period1 ,true);
 
 

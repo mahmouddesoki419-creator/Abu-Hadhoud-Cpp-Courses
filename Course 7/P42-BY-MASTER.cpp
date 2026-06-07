@@ -12,8 +12,20 @@ string ReplaceString(string S1, string StringToReplace , string ReplaceTo)
 	while(pos != std::string::npos)//this mean not found if pos = 0 stop//الـ find بترجع npos في حالة واحدة فقط: لو الكلمة مش موجودة نهائياً في النص.
 	{// nops mean=> not found anything
 		S1 = S1.replace(pos , StringToReplace.length() , ReplaceTo);
+		
 		pos = S1.find(StringToReplace  , pos + ReplaceTo.length()); // find next //// ابدأ البحث من بعد المكان اللي خلصنا فيه تبديل
 	}
+	/// شرح replace Function/
+	
+	/*/pos (نقطة البداية): 
+	بتقول للكمبيوتر "ابدأ قص من أول المكان ده" (مش شرط يكون 0، بيبقى المكان اللي دالة find لقت فيه الكلمة).
+
+StringToReplace.length() 
+(المساحة أو الطول): بتقول للكمبيوتر "امشي لمسافة كام حرف واحذفهم؟
+" (وهنا إحنا بنقوله احذف على قد طول الكلمة القديمة بالظبط).
+
+sReplaceTo (الكلمة الجديدة): 
+بتقول للكمبيوتر "خذ الكلمة الجديدة دي واحشرها (الزقها) مكان الحروف اللي اتذفت"./*/
 
 	return S1;
 

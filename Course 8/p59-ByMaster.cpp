@@ -93,16 +93,23 @@ bool IsDate1BeforeDate2(sDate Date1, sDate Date2)
 }
 
 
-short periodLengthDays(stPeriod Period , bool IncludeEndDate = false)
+int GetDifferenceInDays(sDate Date1, sDate Date2 , bool IncludeEndDay = false)
 {
     int Days = 0;
-    while(IsDate1BeforeDate2(Period.StartDate , Period.EndDate))
-    {   
+
+    while(IsDate1BeforeDate2(Date1 , Date2))
+    {
         Days++;
-        Period.StartDate = increaseDateByOneDay(Period.StartDate);
+        Date1 = increaseDateByOneDay(Date1);// الفاكشن ال بتزود  يوم وتعدل بالنتيجه 31-12-1999 // 1 - 1 - 2000
     }
-    
-    return IncludeEndDate ? ++Days : Days;
+
+    return IncludeEndDay ? ++Days : Days;
+}
+
+
+short periodLengthDays(stPeriod Period , bool IncludeEndDate = false)
+{
+    return GetDifferenceInDays(Period.StartDate , Period.EndDate , IncludeEndDate);
 }
 
 
@@ -160,7 +167,7 @@ int main()
     cout << "\nEnter Period 1:";
     stPeriod Period1 = readPeriod();
 
-    cout << "Period Length is: " << periodLengthDays(Period1);
+    cout << "\n\nPeriod Length is: " << periodLengthDays(Period1);
     cout << "\nPeriod Length (Including End Date) is: " << periodLengthDays(Period1 ,true);
 
 
