@@ -1,0 +1,502 @@
+
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <iomanip>
+#include <limits>
+
+using namespace std;
+
+enum enAtmMainMenueOption
+{
+    eQuickWithdraw = 1 , eNormalWithdraw = 2,
+    eDeposit = 3 , eCheckBalance = 4,
+    eLogout = 5
+};
+
+struct stClient
+{
+    string AccountNumber; 
+    string PinCode;
+    string Name;
+    string Phone;
+    double  AccountBalance;
+    bool MarkForDeleted = false;
+};
+ 
+const string ClientsFileName = "Clients.txt";
+stClient CurrentClient;
+
+void showAtmMainMenueScreen();
+void showQuickWithdrawScreen();
+void showNormalWithdrawScreen();
+void showDepositScreen();
+void Login();
+
+vector<string> splitStirng(string Line , string Delim)//==> A150#//#1234#//#ahmed maher#//#012928434#//#900.000000
+{
+    vector<string> vClientData;
+
+    string Word;
+    short pos = 0;
+
+    while((pos = Line.find(Delim)) != string::npos)// خلال البوزشن لقي الديليم ايكمل 
+    {
+        Word = Line.substr(0 , pos);
+        if(Word != "")
+        {
+            vClientData.push_back(Word);
+        }
+
+        Line.erase(0 , pos + Delim.length());
+    }
+
+    if(Line != "")
+        vClientData.push_back(Line);
+
+    return vClientData;
+}
+
+stClient convertLineToRecord(string line , string Separator = "#//#")
+{
+    stClient Client;
+    vector<string> vClientData;
+    vClientData = splitStirng(line , Separator);
+
+    Client.AccountNumber = vClientData[0];
+    Client.PinCode = vClientData[1];
+    Client.Name = vClientData[2];
+    Client.Phone = vClientData[3];
+    Client.AccountBalance = stod(vClientData[4]);//cast string To double
+
+    return Client;
+}
+
+vector<stClient> loadClientsDataFromFile(string FileName)
+{
+    vector<stClient> vClients;
+
+    fstream MyFile;
+    MyFile.open(FileName , ios::in);
+
+    if(MyFile.is_open())
+    {
+        string Line;
+        stClient Client;
+
+        while(getline(MyFile , Line))
+        {
+            Client = convertLineToRecord(Line);
+            
+            vClients.push_back(Client);
+        }
+        
+        MyFile.close();
+    }
+
+    return vClients;
+}
+
+bool findClientByAccountNumberAndPinCode(string AccountNumber , string PinCode ,  stClient& CurrentClient)
+{
+    vector<stClient> vClients = loadClientsDataFromFile(ClientsFileName);
+
+    for(const stClient& C : vClients)
+    {
+        if(C.AccountNumber == AccountNumber && C.PinCode == PinCode)
+        {
+            CurrentClient = C;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+string convertRecordToLine(stClient Client, string Separator = "#//#")
+{
+    string DataLine = "";
+
+    DataLine += Client.AccountNumber + Separator;
+    DataLine += Client.PinCode + Separator;
+    DataLine += Client.Name + Separator;
+    DataLine += Client.Phone + Separator;
+    DataLine += to_string(Client.AccountBalance);
+
+    return DataLine;
+}
+
+vector<stClient> saveClientsDataFromFile(string FileName , vector<stClient> vClients)
+{
+    fstream MyFile;
+    MyFile.open(FileName , ios::out);
+
+    if(MyFile.is_open())
+    {
+        string line;
+
+        for(stClient Client : vClients)
+        {
+            if(Client.MarkForDeleted == false)
+            {
+                line = convertRecordToLine(Client);
+                MyFile << line << endl;
+            }
+        }
+
+        MyFile.close();
+    }
+
+    return vClients;
+}
+
+short readMainMenueOption()
+{
+    cout << "Choose What do you want to do? [1 To 5]? ";
+    short Option;
+    cin >> Option;
+
+    return Option;
+}
+
+void goBackToAtmMainMenue()
+{
+    cout << "\n\nPress any Key to go back to Main Menue..";
+    system("pause>0");
+    showAtmMainMenueScreen();
+}
+
+
+
+short readQuickWithdrawOption()
+{
+    int Choice = 0;
+
+    while(Choice < 1 || Choice > 9)
+    {
+        cout << "\nChoose What to do from [1] to [9] ? ";
+        cin >> Choice;
+    }
+    return Choice;
+}
+
+int getQuickWithdrawAmount(short QuickWithdrawOption)
+{
+    switch (QuickWithdrawOption)
+    {
+    case 1:
+        return 20;
+
+    case 2: 
+        return 50;
+
+    case 3:
+        return 100;
+
+    case 4:
+        return 200;
+
+    case 5:
+        return 400;
+
+    case 6:
+        return 600;
+
+    case 7:
+        return 800;
+
+    case 8:
+        return 1000;
+
+    }
+    
+    return 0;
+}
+
+bool depostiBalanceToClientByAccountNumber(string AccountNumber , double WithdrawBalance , vector<stClient>& vClients)
+{
+    char Approve = 'y';
+
+    cout << "\n\nare you sure you want perform this transaction? Y/n? ";
+    cin >> Approve;
+    if(tolower (Approve) == 'y')
+    {
+        for(stClient& C : vClients)
+        {
+            if(C.AccountNumber == AccountNumber)
+            {
+                C.AccountBalance += WithdrawBalance;
+                saveClientsDataFromFile(ClientsFileName , vClients);
+                cout << "\n\nDone Successfully. New Balance is: " << C.AccountBalance;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void performQuickWithdrawOption(short QuickWithdrawOption)
+{
+    if(QuickWithdrawOption == 9)//exit
+    {
+        return;
+    }
+
+    short WithdrawBalance = getQuickWithdrawAmount(QuickWithdrawOption);
+
+    if(WithdrawBalance > CurrentClient.AccountBalance)
+    {
+        cout << "\n\nThe amount exceeds your balance, Make onther choice.\n";
+        system("pause");
+        showQuickWithdrawScreen();
+        return;
+    }
+
+    vector<stClient> vClients = loadClientsDataFromFile(ClientsFileName);
+
+    if(depostiBalanceToClientByAccountNumber(CurrentClient.AccountNumber , WithdrawBalance * -1 , vClients))
+        CurrentClient.AccountBalance -= WithdrawBalance;
+    else 
+    {
+        cout << "\n\nthe withdrawal process , has been cancelled.";
+        cout << "\nPress Enter to exit...";
+        cin.get();
+    }
+
+}
+
+//Quick Withdraw Screen
+void showQuickWithdrawScreen()
+{
+    system("cls");
+    cout << setfill('=') << setw(53) << "=" << setfill(' ') << endl;
+    cout << "\t\tQuick Withdraw\n";
+    cout << setfill('=') << setw(53) << "=" << setfill(' ') << endl;
+    //setw(22): بتضمن إن العمود الأول هياخد مساحة 22 حرف بالظبط، فبالتالي العمود التاني هيبدأ
+    // دايماً من نفس المكان في كل السطور.
+    cout <<"    " << left << setw(22) << "[1] 20" << "[2] 50"    << endl;
+    cout <<"    " << left << setw(22) << "[3] 100" << "[4] 200"  << endl;
+    cout <<"    " << left << setw(22) << "[5] 400" << "[6] 600"  << endl;
+    cout <<"    " << left << setw(22) << "[7] 800" << "[8] 1000" << endl;
+    cout <<"    " << left << "[9] Exit\n";
+    cout << setfill('=') << setw(53) << "=" << setfill(' ') << endl;
+
+    performQuickWithdrawOption(readQuickWithdrawOption());
+}
+
+
+
+int readWithdrawAmount()
+{
+    int amount;
+    do 
+    {
+        cout << "\nEnter an amount multiple of 5's ? ";
+        cin >> amount;
+
+        if(amount % 5 != 0)
+        {
+            cout << "Amount must be a multiple of 5!" << endl;
+        }
+
+    }while(amount % 5 != 0);
+    
+    return amount;
+}
+
+void performNormalWithdrawOption()
+{
+    int WithdrawBalance = readWithdrawAmount();
+
+    if(WithdrawBalance > CurrentClient.AccountBalance)
+    {
+        cout << "\nThe amount exceeds your balance, Make Onther Choice";
+        cout << "\nPress any key to continue...";
+        system("pause>0");
+        showNormalWithdrawScreen();
+        return;
+    }
+
+    vector<stClient> vClients = loadClientsDataFromFile(ClientsFileName);
+    if (depostiBalanceToClientByAccountNumber(CurrentClient.AccountNumber , WithdrawBalance * -1 , vClients))
+    {
+        CurrentClient.AccountBalance -= WithdrawBalance;
+    }
+    else 
+    {
+        cout << "\n\nThe Normal Withdraw Process, has been Cancelled.";
+        cout << "\nPress Enter to exit...";
+        cin.get();
+    }
+
+}
+
+//Normal withdraw
+void showNormalWithdrawScreen()
+{
+    system("cls");
+    cout << setfill('=') << setw(53) << "=" << setfill(' ') << endl;
+    cout << "\t\tNormal Withdraw Screen\n";
+    cout << setfill('=') << setw(53) << "=" << setfill(' ') << endl;
+
+    performNormalWithdrawOption();
+}
+
+
+double readPositiveDepositAmount()
+{
+    double amount = 0;
+
+    cout << "\nEnter a Positive Deposit Amount? ";
+    cin >> amount;
+
+    while(amount <= 0)
+    {
+        cout << "\nEnter a Positive Deposit Amount? ";
+        cin >> amount;
+    }
+
+    return amount;
+}
+
+void performDepostiOption()
+{
+    double Amount = readPositiveDepositAmount();
+
+    vector<stClient> vClients = loadClientsDataFromFile(ClientsFileName);
+    if(depostiBalanceToClientByAccountNumber(CurrentClient.AccountNumber , Amount , vClients))
+    {
+        CurrentClient.AccountBalance += Amount;
+    }
+    else 
+    {
+        cout << "\n\nThe Deposit Process, has been Cancelled.";
+        system("pause");
+    }
+}
+
+//Deposit Screen
+void showDepositScreen()
+{
+    system("cls");
+    cout << setfill('=') << setw(53) << "=" << setfill(' ') << endl;
+    cout << "\t\t Deposit Screen\n";
+    cout << setfill('=') << setw(53) << "=" << setfill(' ') << endl;
+
+    performDepostiOption();
+}
+
+//Show Balance Screen
+void showCheckBalanceScreen()
+{
+    system("cls");
+    cout << setfill('=') << setw(53) << "=" << setfill(' ') << endl;
+    cout << "\t\tCheck Balance Screen\n";
+    cout << setfill('=') << setw(53) << "=" << setfill(' ') << endl;
+    
+    cout << "\nYour Balance is " << CurrentClient.AccountBalance;
+}
+
+
+void performAtmMainMenue(enAtmMainMenueOption AtmMainMenueOption)
+{
+    switch (AtmMainMenueOption)
+    {
+    case enAtmMainMenueOption::eQuickWithdraw:
+    {
+        system("cls");
+        showQuickWithdrawScreen();
+        goBackToAtmMainMenue();
+        break;
+    }
+    case enAtmMainMenueOption::eNormalWithdraw:
+    {
+        system("cls");
+        showNormalWithdrawScreen();
+        goBackToAtmMainMenue();
+        break;
+    }
+    case enAtmMainMenueOption::eDeposit:
+    {
+        system("cls");
+        showDepositScreen();
+        goBackToAtmMainMenue();
+        break;
+    }
+    case enAtmMainMenueOption::eCheckBalance:
+    {
+        system("cls");
+        showCheckBalanceScreen();
+        goBackToAtmMainMenue();
+        break;
+    }
+    case enAtmMainMenueOption::eLogout:
+    {
+        Login();
+    }
+    }
+}
+
+void showAtmMainMenueScreen() 
+{
+    system("cls");
+    cout << setfill('=') << setw(53) << "=" << setfill(' ') << endl;
+    cout << "\t\tATM Main menue Screen\n";
+    cout << setfill('=') << setw(53) << "=" << setfill(' ') << endl;
+    cout << "\t[1]Quick Withdraw.";
+    cout << "\n\t[2]Normal Withdraw.";
+    cout << "\n\t[3]Deposit.";
+    cout << "\n\t[4]Check Balance.";
+    cout << "\n\t[5]Logout.\n";
+    cout << setfill('=') << setw(53) << "=" << setfill(' ') << endl;
+    
+    performAtmMainMenue((enAtmMainMenueOption)readMainMenueOption());
+}
+
+bool loadClientInfo(string AccountNumber , string PinCode)
+{
+    if(findClientByAccountNumberAndPinCode(AccountNumber , PinCode, CurrentClient))
+        return true;
+    else 
+        return false;
+}
+
+void Login()
+{
+    bool LoginFaild = false;
+    string AccountNumber , PinCode;
+    do 
+    {
+        system("cls");
+        cout << setfill('-') << setw(43) << "-" << setfill(' ') << endl;
+        cout << "\tLogin Screen\n";
+        cout << setfill('-') << setw(43) << "-" << setfill(' ') << endl;
+
+        if(LoginFaild)
+        {
+            cout << "Invlaid AccountNumber / PinCode!\n";
+        }
+
+        cout << "Enter Account Number? ";
+        cin >> AccountNumber;
+        cout << "Enter Pin? ";
+        cin >> PinCode;
+
+        LoginFaild = !loadClientInfo(AccountNumber , PinCode);
+
+    }while(LoginFaild);
+
+    showAtmMainMenueScreen();
+}
+
+int main()
+
+{
+    Login();
+
+    cout << "\nPress Enter to exit...";
+	cin.ignore(numeric_limits<streamsize>::max(), '\n'); // بيمسح أي Enter قديمة في الذاكرة
+	cin.get();											 // بيستنى منك تضغط Enter عشان يقفل
+    return 0;
+}
